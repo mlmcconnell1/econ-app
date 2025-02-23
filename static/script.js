@@ -78,7 +78,7 @@ const slopeVariations = {
         demand: [{x: 20, y: 210}, {x: 180, y: 190}]
     },
     normal: {
-        supply: [{x: 50, y: 100}, {x: 150, y: 300}],    // Current slopes
+        supply: [{x: 50, y: 100}, {x: 150, y: 300}],    // Reset to unit elasticity
         demand: [{x: 50, y: 300}, {x: 150, y: 100}]
     },
     inelastic: {
@@ -90,33 +90,36 @@ const slopeVariations = {
 // Function to calculate point elasticity
 function calculatePointElasticity(curve, point) {
     // Get slope of the line
-    const slope = (curve[1].y - curve[0].y) / (curve[1].x - curve[0].x);
-    
+    let slope = (curve[1].y - curve[0].y) / (curve[1].x - curve[0].x);
+
     // Calculate elasticity using the point elasticity formula: (dQ/dP) * (P/Q)
     // Note: For demand curve, we'll take absolute value since it's normally negative
-    return Math.abs((1/slope) * (point.y/point.x));
+    let gradient = Math.abs(1/slope)
+    let location = (point.y/point.x)
+    return (gradient * location);
 }
 
 // Function to update the total revenue and elasticity box
 function updateTotalRevenue() {
-    const intersection = findIntersection(supplyCurve, demandCurve);
-    const price = Math.round(intersection.y);
-    const quantity = Math.round(intersection.x);
-    const totalRevenue = price * quantity;
+    let intersection = findIntersection(supplyCurve, demandCurve);
+    let price = Math.round(intersection.y);
+    let quantity = Math.round(intersection.x);
+    let totalRevenue = price * quantity;
 
     // Calculate elasticities at equilibrium
-    const supplyElasticity = calculatePointElasticity(supplyCurve, intersection);
-    const demandElasticity = calculatePointElasticity(demandCurve, intersection);
-    
+    let supplyElasticity = calculatePointElasticity(supplyCurve, intersection);
+    let demandElasticity = calculatePointElasticity(demandCurve, intersection);
+
     document.getElementById('total-revenue').innerHTML = `
         <div class="revenue-box">
             <h3>Market Equilibrium</h3>
             <p>Price: $${price}</p>
             <p>Quantity: ${quantity}</p>
-            <p><strong>Total Revenue: $${totalRevenue.toLocaleString()}</strong></p>
+            <p><strong>Total Revenue ( P x Q ): $${totalRevenue.toLocaleString()}</strong></p>
         </div>
         <div class="elasticity-box">
             <h3>Price Elasticity at Equilibrium</h3>
+            <h4>%ΔP / %ΔQ</h4>
             <p style="color: blue;">Supply Elasticity: ${supplyElasticity.toFixed(2)}</p>
             <p style="color: red;">Demand Elasticity: ${demandElasticity.toFixed(2)}</p>
         </div>
@@ -211,15 +214,10 @@ function updatePriceTable() {
         const demandQty = Math.round(calculateQuantity(p, demandCurve));
         tableHTML += `<td>${demandQty >= 0 ? demandQty : '-'}</td>`;
     }
-        
     
     tableHTML += '</tr></table>';
-    
     document.getElementById('price-table').innerHTML = tableHTML;
 }
-
-// Initial table creation
-updatePriceTable();
 
 // Function to calculate intersection point
 function findIntersection(supply, demand) {
@@ -274,12 +272,14 @@ function dragCurve(data, line) {
         let dx = xScale.invert(event.dx) - xScale.invert(0);
         data.forEach(point => point.x += dx);
         line.attr("d", d3.line().x(d => xScale(d.x)).y(d => yScale(d.y)));
+        
         updatePriceTable();
-        updateIntersectionLine(); // Add this line
+        updateIntersectionLine();
         updateTotalRevenue();
     });
 }
 
 // Initial intersection line and revenue
+updatePriceTable();
 updateIntersectionLine();
 updateTotalRevenue();
