@@ -1,3 +1,4 @@
+import os
 from flask import Flask, render_template
 
 # Will be True on Replit, False elsewhere
