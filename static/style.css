@@ -1,0 +1,95 @@
+.price-table {
+    margin-top: 20px;
+    border-collapse: collapse;
+}
+
+.price-table th, .price-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: right;
+}
+
+.price-table th {
+    background-color: #f4f4f4;
+    text-align: center;  /* Center the headers */
+}
+
+.price-table td:first-child {
+    font-weight: bold;  /* Make prices stand out */
+}
+
+.slope-controls {
+    padding: 20px;
+    background: #f5f5f5;
+    border-radius: 5px;
+}
+
+.slope-controls {
+    padding: 20px;
+    background: #f5f5f5;
+    border-radius: 5px;
+}
+
+.slope-controls div {
+    margin: 10px 0;
+}
+
+.supply-controls, .demand-controls {
+    margin-bottom: 20px;
+    border: 2px solid #666;
+    padding: 15px;
+    border-radius: 5px;
+}
+
+.supply-controls h3, .demand-controls h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #666;
+}
+
+.supply-controls h3 {
+    color: blue;
+}
+
+.demand-controls h3 {
+    color: red;
+}
+
+.revenue-box {
+    background: #f5f5f5;
+    border: 2px solid #666;
+    padding: 15px;
+    border-radius: 5px;
+    margin-top: 20px;
+}
+
+.revenue-box h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #666;
+}
+
+.revenue-box p {
+    margin: 8px 0;
+}
+
+.elasticity-box {
+    background: #f5f5f5;
+    border: 2px solid #666;
+    padding: 15px;
+    border-radius: 5px;
+    margin-top: 20px;
+}
+
+.elasticity-box h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #666;
+}
+
+.elasticity-box p {
+    margin: 8px 0;
+    font-weight: bold;

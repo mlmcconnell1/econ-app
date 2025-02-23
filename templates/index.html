@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supply & Demand Graph</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h2 style="text-align: left">Dani's Interactive Supply & Demand Graph</h2>
+    <div style="display: flex; gap: 20px;">
+        <div id="chart"></div>
+        <div class="slope-controls">
+            <div class="supply-controls">
+                <h3>Supply Curve</h3>
+                <div>
+                    <input type="radio" id="supply-inelastic" name="supply-slope" value="inelastic">
+                    <label for="supply-inelastic">Inelastic (Steep)</label>
+                </div>
+                <div>
+                    <input type="radio" id="supply-normal" name="supply-slope" value="normal" checked>
+                    <label for="supply-normal">Normal</label>
+                </div>
+                <div>
+                    <input type="radio" id="supply-elastic" name="supply-slope" value="elastic">
+                    <label for="supply-elastic">Elastic (Flat)</label>
+                </div>
+            </div>
+            
+            <div class="demand-controls">
+                <h3>Demand Curve</h3>
+                <div>
+                    <input type="radio" id="demand-inelastic" name="demand-slope" value="inelastic">
+                    <label for="demand-inelastic">Inelastic (Steep)</label>
+                </div>
+                <div>
+                    <input type="radio" id="demand-normal" name="demand-slope" value="normal" checked>
+                    <label for="demand-normal">Normal</label>
+                </div>
+                <div>
+                    <input type="radio" id="demand-elastic" name="demand-slope" value="elastic">
+                    <label for="demand-elastic">Elastic (Flat)</label>
+                </div>
+            </div>
+
+            <div id="total-revenue"></div>
+
+        </div>
+    </div>
+    <div id="price-table"></div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
