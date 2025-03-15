@@ -12,6 +12,8 @@ def index():
 
 if __name__ == '__main__':
     if is_replit:
+        print("Running in production mode.")
         app.run(host='0.0.0.0', port=5000)
     else:
+        print("Running in debug mode.")
         app.run(debug=True)  # Runs the local server in debug mode

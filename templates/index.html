@@ -3,52 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Supply & Demand Graph</title>
+    <title>Supply &amp Demand Graph</title>
+
+    <!-- Cache control meta tags -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h2 style="text-align: left">Dani's Interactive Supply & Demand Graph</h2>
-    <div style="display: flex; gap: 20px;">
-        <div id="chart"></div>
-        <div class="slope-controls">
-            <div class="supply-controls">
-                <h3>Supply Curve</h3>
-                <div>
-                    <input type="radio" id="supply-inelastic" name="supply-slope" value="inelastic">
-                    <label for="supply-inelastic">Inelastic (Steep)</label>
+    <div class="main-layout">
+        <div id="chart-table">
+            <h2 style="text-align: center">Dani's Interactive Supply &amp Demand Graph</h2>
+            <div id="chart"></div>
+            <div id="price-table"></div>
+        </div>
+        <div class="controls-area">
+            <div class="supply-demand-controls">
+                <div class="supply-buttons button-box">
+                    <h3>Supply Curve</h3>
+                    <div>
+                        <input type="radio" id="supply-inelastic" name="supply-slope" value="inelastic">
+                        <label for="supply-inelastic">Inelastic (Steep)</label>
+                    </div>
+                    <div>
+                        <input type="radio" id="supply-normal" name="supply-slope" value="unit_elastic" checked>
+                        <label for="supply-normal">Unit Elastic</label>
+                    </div>
+                    <div>
+                        <input type="radio" id="supply-elastic" name="supply-slope" value="elastic">
+                        <label for="supply-elastic">Elastic (Flat)</label>
+                    </div>
                 </div>
-                <div>
-                    <input type="radio" id="supply-normal" name="supply-slope" value="normal" checked>
-                    <label for="supply-normal">Normal</label>
-                </div>
-                <div>
-                    <input type="radio" id="supply-elastic" name="supply-slope" value="elastic">
-                    <label for="supply-elastic">Elastic (Flat)</label>
-                </div>
-            </div>
-            
-            <div class="demand-controls">
-                <h3>Demand Curve</h3>
-                <div>
-                    <input type="radio" id="demand-inelastic" name="demand-slope" value="inelastic">
-                    <label for="demand-inelastic">Inelastic (Steep)</label>
-                </div>
-                <div>
-                    <input type="radio" id="demand-normal" name="demand-slope" value="normal" checked>
-                    <label for="demand-normal">Normal</label>
-                </div>
-                <div>
-                    <input type="radio" id="demand-elastic" name="demand-slope" value="elastic">
-                    <label for="demand-elastic">Elastic (Flat)</label>
+                <div class="demand-buttons button-box">
+                    <h3>Demand Curve</h3>
+                    <div>
+                        <input type="radio" id="demand-inelastic" name="demand-slope" value="inelastic">
+                        <label for="demand-inelastic">Inelastic (Steep)</label>
+                    </div>
+                    <div>
+                        <input type="radio" id="demand-normal" name="demand-slope" value="unit_elastic" checked>
+                        <label for="demand-normal">Unit Elastic</label>
+                    </div>
+                    <div>
+                        <input type="radio" id="demand-elastic" name="demand-slope" value="elastic">
+                        <label for="demand-elastic">Elastic (Flat)</label>
+                    </div>
                 </div>
             </div>
 
-            <div id="total-revenue"></div>
+            <div class="equilibrium-outputs">
+                <div class="calculation-box revenue-box">
+                    <h3>Market Equilibrium</h3>
+                    <p>Price: $<span id="equilibrium-price">0</span></p>
+                    <p>Quantity: <span id="equilibrium-quantity">0</span></p>
+                    <p><strong>Total Revenue ( P x Q ): $<span id="total-revenue-value">0</span></strong></p>
+                </div>
+                
+                <div class="calculation-box elasticity-box">
+                    <h3>Price Elasticity at Equilibrium</h3>
+                    <h4>%ΔQ / %ΔP</h4>
+                    <p style="color: red;">Supply Elasticity: <span id="supply-elasticity">0.00</span></p>
+                    <p style="color: blue;">Demand Elasticity: <span id="demand-elasticity">0.00</span></p>
+                </div>
+                
+                <div id="tax-info-container" class="calculation-box tax-box" style="display: none;">
+                    <h3>Tax Effects</h3>
+                    <p>New Price: $<span id="tax-price">0</span></p>
+                    <p>New Quantity: <span id="tax-quantity">0</span></p>
+                    <p>Tax per Unit: $<span id="tax-per-unit">0</span></p>
+                    <p><strong>Total Tax Revenue: $<span id="tax-revenue">0</span></strong></p>
+                    <p><strong>New Market Revenue: $<span id="new-market-revenue">0</span></strong></p>
+                    <p>Deadweight Loss: $<span id="deadweight-loss">0</span></p>
+                </div>
+            </div>
+
+            <div class="intervention-buttons button-box">
+                <h3>Government Intervention</h3>
+                <div>
+                    <input type="radio" id="intervention-none" name="intervention-type" value="none" checked>
+                    <label for="tax-none">None</label>
+                </div>
+                <div class="divider"></div>
+                <div>
+                    <input type="radio" id="intervention-tax-supply" name="intervention-type" value="tax-supply">
+                    <label for="tax-supply">Supplier Tax (10%)</label>
+                </div>
+                <div>
+                    <input type="radio" id="intervention-subsidy-supply" name="intervention-type" value="subsidy-supply">
+                    <label for="subsidy-supply">Supplier Subsidy (10%)</label>
+                </div>
+                <div class="divider"></div>
+                <div>
+                    <input type="radio" id="intervention-tax-demand" name="intervention-type" value="tax-demand">
+                    <label for="tax-demand">Purchaser Tax (10%)</label>
+                </div>
+                <div>
+                    <input type="radio" id="intervention-subsidy-demand" name="intervention-type" value="subsidy-demand">
+                    <label for="subsidy-demand">Purchaser Subsidy (10%)</label>
+                </div>
+                <div class="divider"></div>
+                <div>
+                    <input type="radio" id="intervention-price-ceiling" name="intervention-type" value="price-ceiling">
+                    <label for="price-ceiling">Price Ceiling</label>
+                </div>
+                <div>
+                    <input type="radio" id="intervention-price-floor" name="intervention-type" value="price-floor">
+                    <label for="price-floor">Price Floor</label>
+                </div>
+                <div class="divider"></div>
+                <div>
+                    <input type="radio" id="intervention-quantity" name="intervention-type" value="quantity-limit">
+                    <label for="quantity">Regulated Quantity</label>
+                </div>
+            </div>
 
         </div>
     </div>
-    <div id="price-table"></div>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
