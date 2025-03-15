@@ -370,7 +370,7 @@ function dragLine(line) {
 
                 // Move tax or subsidy line if it exists
                 if (line.shadowLine !== null) {
-                    line.shaadowLine.endPoints.forEach((point) => {
+                    line.shadowLine.endPoints.forEach((point) => {
                         point.x += dx;
                     });
                     line.shadowLine.path.attr("d", d3.line().x(d => xScale(d.x)).y(d => yScale(d.y)));
@@ -413,10 +413,10 @@ function dragLine(line) {
                 // Since we are dragging in the x direction, calculate current min and max endpoint x values
                 let minX = Math.min(...line.endPoints.map(point => point.x));
                 let maxX = Math.max(...line.endPoints.map(point => point.x));
-                console.log("Min x",minX,"Max x",maxX);
+
                 // Don't allow drag outside of our boundary values
                 let boundaries = getXaxisBoundaries(line.className);
-                console.log("Boundaries",boundaries);
+
                 if ((minX + dx < boundaries.left_min) || (maxX + dx < boundaries.mid_min)) dx = Math.abs(dx);
                 if ((minX + dx > boundaries.mid_max) || (maxX + dx > boundaries.right_max)) dx = 0- Math.abs(dx);
 
