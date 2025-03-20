@@ -337,10 +337,16 @@ function getYaxisBoundaries(className) {
     return boundaries
 }
 
+//***********************************
 // Allow a line to be dragged, then update all calculations based on new
-// location
+// location -- dragging and radio buttons are the two ways to interact with
+// the graph state.
+//
 // The drag must be stopped at fixed limits: when an endpoint gets to border of the page
 // The drag must be stopped at variable limits: don't allow an enpoint to go past an intersecting line
+//
+// This function passes a line-specific callback to D3
+//***********************************
 function dragLine(line) {
 
     switch(line.className) {
@@ -375,7 +381,6 @@ function dragLine(line) {
                     });
                     line.shadowLine.path.attr("d", d3.line().x(d => xScale(d.x)).y(d => yScale(d.y)));
                 }
-                findEquilibrium();
                 updateCalculations(line.className);
             });
 
@@ -434,13 +439,10 @@ function dragLine(line) {
     }
 }
 
-// Get the market equilibrium point
-function findEquilibrium() {
-    equilibrium = supplyLine.findIntersection(demandLine);
-    return equilibrium;
-}
 // Set/Reset price and quantity lines to be at equilibrium
 function updatePriceQuantity() {
+    let equilibrium = supplyLine.findIntersection(demandLine);
+
     // Update price and quantity lines based on equilibrium
     priceEndPoints = [{x: 0,y: equilibrium.y}, equilibrium];
     priceLine.updateEndPoints(priceEndPoints);
@@ -448,23 +450,12 @@ function updatePriceQuantity() {
     quantityLine.updateEndPoints(quantityEndPoints);
 }
 
-// Calculate end points of shortage line
-function getShortageEndPoints() {
-    let shortageEndPoints = [
-            supplyLine.findIntersection(priceLine),
-            demandLine.findIntersection(priceLine)
-    ];
-    return shortageEndPoints;
-}
-
-
 //----------------------------------
 // Set up graph default features
 //----------------------------------
 
 // Globals
 let interventionState = 'intervention-none'
-let equilibrium = null;
 
 // Define supply line elasticity variations
 const supplyVariations = {
@@ -499,6 +490,7 @@ const quantityLine = new Line(quantityEndPoints, quantityLineParameters, "quanti
 
 // Initialize other lines that may or may not be on the graph depending on settings
 let shortageLine = null;
+let surplusLine = null;
 let priceLimit = null;
 let quantityLimit = null;
 
@@ -506,20 +498,20 @@ let quantityLimit = null;
 supplyLine.path.call(dragLine(supplyLine));
 demandLine.path.call(dragLine(demandLine));
 
-//----------------------------------
-// Set up radio buttons and calculation output boxes
-//----------------------------------
+//***********************************
+// Set up radio buttons and calculation output boxes - these and the dragLine callbacks
+// are the two ways that the graph state can be altered by the user
+//
+//***********************************
 
 // Event listeners for supply & demand radio buttons
 function supplyButtonClick(variation) {
     supplyLine.updateEndPoints(supplyVariations[variation])
-    findEquilibrium();
     updateCalculations('none');
 }
 addRadioListeners('input[name="supply-slope"]', supplyButtonClick);
 function demandButtonClick(variation) {
     demandLine.updateEndPoints(demandVariations[variation])
-    findEquilibrium();
     updateCalculations('none');
 }
 addRadioListeners('input[name="demand-slope"]', demandButtonClick);
@@ -540,6 +532,9 @@ function clearInterventions(radio_reset) {
     if (shortageLine !== null) {
         shortageLine.remove();
     }
+    if (surplusLine !== null) {
+        surplusLine.remove();
+    }
     // Make sure price and quantity lines are showing
     priceLine.show()
     quantityLine.show()
@@ -548,15 +543,14 @@ function clearInterventions(radio_reset) {
 // Event listener for interventions radio button
 function interventionsButtonClick(intervention) {
     let shortageLineParameters = null;
+    let surplusLineParameters = null;
     let priceLimitParameters = null;
     let quantityLimitParameters = null;
 
+    // When we change from one intervention to another, we need to retrun to the
+    // neutral state before we start setting up the new one
     clearInterventions(false);
     interventionState = intervention;
-
-    // Set price and quantity lines back to equilibrium to begin new intervention
-    findEquilibrium();
-    updatePriceQuantity();
 
     switch (intervention) {
 
@@ -573,28 +567,37 @@ function interventionsButtonClick(intervention) {
         case 'subsidy-demand':
             demandLine.taxsubAdd(0.1);
             break;
-        // Add a draggable line to set price or quantity limits
+        // Add a draggable line to set price or quantity limits and a line to show shortage / surplus
         case 'price-ceiling':
-            shortageLineParameters = {color: 'orange', stroke_width: 2, cursor: 'none', stroke_dasharray: "8"};
-            shortageLine = new Line(getShortageEndPoints(), shortageLineParameters, "shortage");
-
             priceLimitParameters = ({color: 'gray', stroke_width: 3, cursor: 'ns-resize', stroke_dasharray: "8"});
             priceLimit = new Line(priceLine.getEndPoints(), priceLimitParameters, "price-ceiling");
             priceLimit.path.call(dragLine(priceLimit));
+
+            shortageLineParameters = {color: 'orange', stroke_width: 2, cursor: 'none', stroke_dasharray: "8"};
+            shortageLine = new Line([supplyLine.findIntersection(priceLimit),demandLine.findIntersection(priceLimit)],
+                 shortageLineParameters, "shortage");
         break;
         case 'price-floor':
             priceLimitParameters = ({color: 'gray', stroke_width: 3, cursor: 'ns-resize', stroke_dasharray: "8"});
             priceLimit = new Line(priceLine.getEndPoints(), priceLimitParameters, "price-floor");
             priceLimit.path.call(dragLine(priceLimit));
+
+            surplusLineParameters = {color: 'limegreen', stroke_width: 2, cursor: 'none', stroke_dasharray: "8"};
+            surplusLine = new Line([demandLine.findIntersection(priceLimit),supplyLine.findIntersection(priceLimit)],
+                surplusLineParameters, "surplus");
         break;
         case 'quantity-limit':
             quantityLimitParameters = ({color: 'gray', stroke_width: 3, cursor: 'ew-resize', stroke_dasharray: "8"});
             quantityLimit = new Line(quantityLine.getEndPoints(), quantityLimitParameters, "quantity-limit");
             quantityLimit.path.call(dragLine(quantityLimit));
-        break;
+
+            surplusLineParameters = {color: 'limegreen', stroke_width: 2, cursor: 'none', stroke_dasharray: "8"};
+            surplusLine = new Line([demandLine.findIntersection(quantityLimit),supplyLine.findIntersection(quantityLimit)],
+                surplusLineParameters, "surplus");
+            break;
         default:
     }
-    findEquilibrium();
+    updatePriceQuantity();
     updateCalculations();
 }
 addRadioListeners('input[name="intervention-type"]', interventionsButtonClick);
@@ -604,9 +607,6 @@ document.getElementById('supply-normal').checked = true;
 document.getElementById('demand-normal').checked = true;
 document.getElementById('intervention-none').checked = true;
 
-// We should have everything set to find market equilibrium
-findEquilibrium();
-
 // Then get a first set of calculations from equilibrium and curve positions
 updateCalculations('none');
 
@@ -614,7 +614,8 @@ updateCalculations('none');
 // Calculation functions - run each time a line is moved
 //----------------------------------
 
-// Function to write out a price table
+// Function to write out a price table - this depends only on location of supply & demand lines
+// Supply and demand shift if a tax or subsidy is applied, and we use the shifted line
 function writePriceTable() {
     let tableHTML = `
         <table class="price-table">
@@ -644,6 +645,7 @@ function writePriceTable() {
 }
 
 // Perform calculations for values output to screen, based on line locations
+// This uses equilibrium location (regardless of price floor/ceiling or quantity ceiling)
 function updateCalculatedValues() {
     // Use taxLine intersection if it exists
     let intersection = supplyLine.findIntersection(demandLine);
@@ -665,44 +667,55 @@ function updateCalculatedValues() {
     document.getElementById('demand-elasticity').textContent = demandElasticity.toFixed(2);
 }
 
-// Find the price/quantity intersection based on interventions state
-function updateLines(lastDrag) {
+//***********************************
+// This function uses intervention state and draggable line location to determine dependent
+// locations and visibility for dependent lines
+// Draggable lines are supplyLine, demandLine, priceLimit, and quantityLimit
+//
+// Either a button click or a line drag can influence what's done here
+//***********************************
+
+function adjustLines(lastDrag) {
+    let intersection = null;
     let priceLimitEndPoints = null;
     let quantityLimitEndPoints = null;
 
+    let equilibrium = supplyLine.findIntersection(demandLine);
+
     switch (interventionState) {
         
-        // Price limit line is draggable
+        // Price limit, supply, and demand lines are draggable
         case 'price-ceiling':
-            // Find intersection of draggable priceLimit and supply line
             intersection = priceLimit.findIntersection(supplyLine);
-
-            // Readjust price limit line length based on price
             priceLimitEndPoints = [intersection, {x: 0, y: intersection.y}];
             priceLimit.updateEndPoints(priceLimitEndPoints);
-    
-            if (priceLimitEndPoints[0].y < equilibrium.y) {
+        
+            // Now adjust anything else on the screen based on the new priceLimit
+            // location
+            if (priceLimit.getEndPoints()[0].y < equilibrium.y) {
                 // Price limit is binding, so make it black
                 priceLimit.updateParameters({color: 'black', stroke_width: 3, cursor: 'ns-resize', stroke_dasharray: "none"});
-                
-                // Hide the price line, show shortage line
-                priceLine.hide()
-                shortageLine.show()
 
-                // Adjust quantity line
+                // Adjust quantity line location for binding price limit
                 quantityEndPoints = [intersection, {x: intersection.x, y: 0}];
                 quantityLine.updateEndPoints(quantityEndPoints);
 
                 // Adjust shortage line
-                shortageLine.updateEndPoints(getShortageEndPoints());
+                shortageLine.updateParameters({color: 'orange', stroke_width: 2, cursor: 'none', stroke_dasharray: "8"});
+                shortageLine.updateEndPoints([supplyLine.findIntersection(priceLimit),demandLine.findIntersection(priceLimit)]);
+
+                // Hide the price line, show shortage line
+                priceLine.hide()
+                shortageLine.show()
              } else {
                 // Price limit is not binding, so make it gray
                 priceLimit.updateParameters({color: 'gray', stroke_width: 3, cursor: 'ns-resize', stroke_dasharray: "8"});
 
-                // Adjust quantity line
-                intersection = demandLine.findIntersection(supplyLine);
-                quantityEndPoints = [intersection, {x: intersection.x,y: 0}];
-                quantityLine.updateEndPoints(quantityEndPoints);
+                // Adjust price line location for equilibrium (price limit is non binding)
+                priceLine.updateEndPoints([{x: 0, y: equilibrium.y}, equilibrium]);
+
+                // Adjust quantity line location for equilibrium (price limit is non binding)
+                quantityLine.updateEndPoints([equilibrium, {x: equilibrium.x, y: 0}]);
 
                 // Hide shortage line, show price line
                 shortageLine.hide();
@@ -713,65 +726,72 @@ function updateLines(lastDrag) {
         case 'price-floor':
             // Find intersection of draggable price and demand line
             intersection = priceLimit.findIntersection(demandLine);
-            // Adjust price limit line length
             priceLimitEndPoints = [intersection, {x: 0, y: intersection.y}];
             priceLimit.updateEndPoints(priceLimitEndPoints);
             
-            equilibrium = supplyLine.findIntersection(demandLine);
-            if (priceLimitEndPoints[0].y > equilibrium.y) {
-                // Price line is binding, so make it black
+            if (priceLimit.getEndPoints()[0].y > equilibrium.y) {
+                // Price limit is binding, so make it black
                 priceLimit.updateParameters({color: 'black', stroke_width: 3, cursor: 'ns-resize', stroke_dasharray: "none"});
+
+                // Adjust quantity line location for binding price limit
+                quantityEndPoints = [intersection, {x: intersection.x, y: 0}];
+                quantityLine.updateEndPoints(quantityEndPoints);
+                
+                // Adjust surplus line
+                surplusLine.updateParameters({color: 'limegreen', stroke_width: 2, cursor: 'none', stroke_dasharray: "8"});
+                surplusLine.updateEndPoints([demandLine.findIntersection(priceLimit),supplyLine.findIntersection(priceLimit)]);
 
                 // Hide price line, show shortage line
                 priceLine.hide()
-
-                // Adjust quantity line
-                quantityEndPoints = [intersection, {x: intersection.x, y: 0}];
-                quantityLine.updateEndPoints(quantityEndPoints);
-
+                surplusLine.show()
              } else {
                 // Price limit is not binding, so make it gray
                 priceLimit.updateParameters({color: 'gray', stroke_width: 3, cursor: 'ns-resize', stroke_dasharray: "8"});
 
-                // Hide price line, show shortage line
-                priceLine.show()
+                // Adjust price line location for equilibrium (price limit is non binding)
+                priceLine.updateEndPoints([{x: 0, y: equilibrium.y}, equilibrium]);
 
                 // Adjust quantity line
-                intersection = demandLine.findIntersection(supplyLine);
-                quantityEndPoints = [intersection, {x: intersection.x,y: 0}];
-                quantityLine.updateEndPoints(quantityEndPoints);
+                quantityLine.updateEndPoints([equilibrium, {x: equilibrium.x, y: 0}]);
+
+                // Show price line, hide shortage line
+                priceLine.show()
+                surplusLine.hide();
              }
         break;
 
         case 'quantity-limit':
-            // Find intersection with demand line
+            // Find intersection of draggable quantity with demand line
             intersection = quantityLimit.findIntersection(demandLine);
-            // Adjust quantity limit line length
             quantityLimitEndPoints = [{x: intersection.x,y: 0}, intersection];
             quantityLimit.updateEndPoints(quantityLimitEndPoints);
 
-            equilibrium = supplyLine.findIntersection(demandLine);
             if (quantityLimitEndPoints[0].x < equilibrium.x) {
                 // Quantity limit is binding, so make it black
                 quantityLimit.updateParameters({color: 'black', stroke_width: 3, cursor: 'ew-resize', stroke_dasharray: "none"});
 
-                // Hide the quantity line
-                quantityLine.hide()
-
                 // Adjust price line
-                priceEndPoints = [{x: 0,y: intersection.y}, intersection];
-                priceLine.updateEndPoints(priceEndPoints);
+                priceLine.updateEndPoints([{x: 0, y: quantityLimitEndPoints[1].y}, demandLine.findIntersection(quantityLimit)]);
+
+                // Adjust surplus line
+                surplusLine.updateParameters({color: 'limegreen', stroke_width: 2, cursor: 'none', stroke_dasharray: "8"});
+                surplusLine.updateEndPoints([demandLine.findIntersection(priceLine),supplyLine.findIntersection(priceLine)]);
+                
+                // Hide the quantity line and show the surplus line
+                quantityLine.hide()
+                surplusLine.show()
+
             } else {
                 // Quantity line is not binding, so make it gray
                 quantityLimit.updateParameters({color: 'gray', stroke_width: 3, cursor: 'ew-resize', stroke_dasharray: "8"});
 
-                // Show the quantity line
-                quantityLine.show()
+                // Adjust price line and quantity line to equilibrium
+                priceLine.updateEndPoints([{x: 0, y: equilibrium.y}, equilibrium]);
+                quantityLine.updateEndPoints([equilibrium, {x: equilibrium.x, y: 0}]);
 
-                // Adjust price line to equilibrium
-                intersection = demandLine.findIntersection(supplyLine);
-                priceEndPoints = [{x: 0,y: intersection.y}, intersection];
-                priceLine.updateEndPoints(priceEndPoints);
+                // Show the quantity line and hide the surplus line
+                quantityLine.show()
+                surplusLine.hide()
             }
         break;
 
@@ -786,9 +806,9 @@ function updateLines(lastDrag) {
       }
 };
 
-// Initial intersection line and revenue
+// Update screen based on intervention state and any drag changes
 function updateCalculations(lastDrag) {
     writePriceTable();
-    updateLines(lastDrag);
+    adjustLines(lastDrag);
     updateCalculatedValues();
 };
